@@ -6,28 +6,40 @@ import {useState} from "react";
 import {useReservation} from "@/app/_components/ReservationContext";
 
 function isAlreadyBooked(range, datesArr) {
-  return (
-    range.from &&
-    range.to &&
-    datesArr.some((date) =>
-      isWithinInterval(date, {start: range.from, end: range.to})
-    )
+  if (!range?.from || !range?.to) return false;
+
+  return datesArr.some((date) =>
+    isWithinInterval(date, { start: range.from, end: range.to })
   );
 }
+
 
 function DateSelector({cabin, settings, bookedDates}) {
   const {range, setRange, resetRange} = useReservation();
   const {regularPrice, discount} = cabin;
   const displayRange = isAlreadyBooked(range, bookedDates) ? {from: null, to : null } : range;
-  const numNights = differenceInDays(displayRange.to, displayRange.from);
+  const numNights =
+    displayRange?.from && displayRange?.to
+      ? differenceInDays(displayRange.to, displayRange.from)
+      : 0;
   const cabinPrice = numNights * (regularPrice - discount);
   const {minBookingLength, maxBookingLength} = settings;
+
+  function handleSelect(selectedRange) {
+    // اگر کاربر دوباره روی همون روز کلیک کنه، selectedRange ممکنه undefined یا فقط from باشه
+    if (!selectedRange?.from || (selectedRange.to && isSameDay(selectedRange.from, selectedRange.to))) {
+      resetRange(); // پاک کردن انتخاب در این حالت
+    } else {
+      setRange(selectedRange);
+    }
+  }
+
   return (
     <div className="flex flex-col justify-between">
       <DayPicker
         className="pt-4 place-self-center"
         mode="range"
-        onSelect={setRange}
+        onSelect={handleSelect}
         selected={displayRange}
         min={minBookingLength + 1}
         max={maxBookingLength}
